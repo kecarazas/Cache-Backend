@@ -1,0 +1,42 @@
+services:
+
+  # ===== Base de datos MySQL =====
+  mysql:
+    image: mysql:8.4
+    container_name: cache-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: cache_db
+      TZ: America/Santiago
+    ports:
+      # 3307 en tu PC -> 3306 en el contenedor
+      # (así no choca con un MySQL local que ya use el 3306)
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      # El backend espera a que MySQL responda antes de arrancar
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # ===== Backend Spring Boot =====
+  backend:
+    build: ../../Downloads/fullstack/cache-backend-commits/41-docker-compose
+    container_name: cache-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Dentro de Docker, MySQL se llama "mysql" (el nombre del servicio), no "localhost"
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/cache_db?createDatabaseIfNotExist=true&serverTimezone=America/Santiago&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      APP_CORS_ORIGENES: http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
+      # JWT_SECRET: define aquí una clave propia para producción
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql_data:
