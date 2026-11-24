@@ -2,8 +2,6 @@ package cl.cache.cache_backend.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-import java.util.Locale;
-
 public enum EstadoPedido {
     RECIBIDO, ENVIADO, ENTREGADO, ANULADO;
 
